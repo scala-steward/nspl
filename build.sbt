@@ -25,7 +25,7 @@ inThisBuild(
 
 lazy val commonSettings = Seq(
   scalaVersion := "2.13.10",
-  crossScalaVersions := Seq("2.13.10", "3.3.5"),
+  crossScalaVersions := Seq("2.13.10", "3.3.6"),
   javacOptions ++= Seq("-Xdoclint:none"),
   scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((3, _)) =>
@@ -206,7 +206,7 @@ lazy val docs = project
     commonSettings: _*
   )
   .settings(
-    crossScalaVersions := List("3.3.5"),
+    crossScalaVersions := List("3.3.6"),
     Compile / doc / sources := Seq.empty
   )
   .settings(
