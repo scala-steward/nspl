@@ -83,11 +83,11 @@ object HistogramData {
   ): Seq[(Double, Double)] = {
     assert(max >= min, "max < min")
     assert(step > 0, "step < 0")
-    val c = ((max - min) / step).toInt
+    val c = math.ceil((max - min) / step).toInt
     if (c == 0) List((min, max))
     else
       0 until c map { i =>
-        (min + step * i) -> (min + step * (i + 1))
+        (min + step * i) -> (if (i == c - 1) max else min + step * (i + 1))
       } toSeq
   }
 

@@ -467,7 +467,7 @@ private[nspl] trait Renderers {
 
       val r = renderer()
 
-      0 until 1000 foreach { i =>
+      0 to 1000 foreach { i =>
         val x = xAxis.min + i * (xAxis.max - xAxis.min) / 1000.0
         val y = evaluatePolynomial(data.allColumns.toArray, x)
         r.render(VectorRow(Vector(x, y), ""), xAxis, yAxis, ctx, tx)

@@ -29,7 +29,7 @@ object KDE {
     n * d.foldLeft(0.0) { (s, xi) =>
       val sqdist =
         (x._1 - xi._1) * (x._1 - xi._1) + (x._2 - xi._2) * (x._2 - xi._2)
-      math.exp(-0.5 * sqdist * rbw) + s
+      math.exp(-0.5 * sqdist * rbw * rbw) + s
     }
   }
 }

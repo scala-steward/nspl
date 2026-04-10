@@ -135,7 +135,7 @@ trait JavaAWTUtil {
     val aspect = elem.bounds.h / elem.bounds.w
     val height = (width * aspect).toInt
     val g2d = new VectorGraphics2D()
-    val renderingContext = new JavaRC(g2d,true)
+    val renderingContext = new JavaRC(g2d, doRender = true, textAsShapes = true)
 
     val processor =
       format match {

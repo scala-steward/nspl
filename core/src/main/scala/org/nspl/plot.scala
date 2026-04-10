@@ -334,11 +334,11 @@ private[nspl] trait Plots {
       else xMinMax.map(_.max).max
     val dataYMin =
       if (yLimMin.isDefined) 0.0
-      else if (xMinMax.isEmpty) 0d
+      else if (yMinMax.isEmpty) 0d
       else yMinMax.map(_.min).min
     val dataYMax =
       if (yLimMax.isDefined) 0.0
-      else if (xMinMax.isEmpty) 1d
+      else if (yMinMax.isEmpty) 1d
       else yMinMax.map(_.max).max
 
     val xMin = xAxisSetting.axisFactory match {

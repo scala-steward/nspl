@@ -3,7 +3,7 @@ package org.nspl
 package object data {
 
   private[nspl] def linspace(min: Double, max: Double, n: Int) = 0 until n map { i =>
-    min + (max - min) / n * i
+    min + (max - min) / (n - 1) * i
   }
 
   private[nspl] def mean(s: Seq[Double]) = s.sum / s.size

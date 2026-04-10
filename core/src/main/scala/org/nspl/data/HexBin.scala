@@ -33,7 +33,7 @@ object HexBin {
     val xOrigin2 = xlim._1 + width * 0.5
     val yOrigin2 = ylim._1 + height * 0.5
 
-    val bins = scala.collection.mutable.AnyRefMap[(Double, Double), Long]()
+    val bins = scala.collection.mutable.HashMap[(Double, Double), Long]()
 
     data.foreach { case (x, y) =>
       // lattice 1 coordinates

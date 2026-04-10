@@ -6,7 +6,8 @@ import JavaFontConversion._
 
 class JavaRC private[nspl] (
     private[nspl] val graphics: Graphics2D,
-    private[nspl] val doRender: Boolean
+    private[nspl] val doRender: Boolean,
+    private[nspl] val textAsShapes: Boolean = false
 ) extends RenderingContext[JavaRC] {
 
   private[nspl] var paintColor: Color = Color.black
@@ -104,12 +105,19 @@ object awtrenderer extends JavaAWTUtil {
         if (!elem.layout.isEmpty && elem.color.a > 0) {
           ctx.withTransform(elem.tx) {
             ctx.withPaint(elem.color) {
-              ctx.graphics.setFont(font2font(elem.font))
+              val jfont = font2font(elem.font)
+              ctx.graphics.setFont(jfont)
               elem.layout.lines.foreach { case (line, lineTx) =>
                 ctx.withTransform(lineTx) {
                   if (ctx.doRender) {
                     ctx.setTransformInGraphics()
-                    ctx.graphics.drawString(line, 0, 0)
+                    if (ctx.textAsShapes) {
+                      val frc = ctx.graphics.getFontRenderContext
+                      val gv = jfont.createGlyphVector(frc, line)
+                      ctx.graphics.fill(gv.getOutline(0f, 0f))
+                    } else {
+                      ctx.graphics.drawString(line, 0, 0)
+                    }
                   }
                 }
               }
