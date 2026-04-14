@@ -12,7 +12,7 @@ import org.saddle.index.InnerJoin
 class SaddlePlotSpec extends munit.FunSuite {
 
   override val munitTimeout = scala.concurrent.duration.Duration(300, "s")
-  implicit val myfont: FontConfiguration = font("Hasklig")
+  implicit val myfont: FontConfiguration = font("SansSerif")
 
   def readFrameFromClasspath(s: String) =
     CsvParser

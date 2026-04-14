@@ -58,7 +58,7 @@ object awtrenderer extends JavaAWTUtil {
 
   implicit val defaultGlyphMeasurer: Font.GlyphMeasurer= AwtGlyphMeasurer
 
-  implicit val defaultAWTFont: FontConfiguration = font("Arial")
+  implicit val defaultAWTFont: FontConfiguration = font("SansSerif")
 
   implicit val shapeRenderer: Renderer[ShapeElem, JavaRC] =
     new Renderer[ShapeElem, JavaRC] {
@@ -106,7 +106,9 @@ object awtrenderer extends JavaAWTUtil {
           ctx.withTransform(elem.tx) {
             ctx.withPaint(elem.color) {
               val jfont = font2font(elem.font)
-              ctx.graphics.setFont(jfont)
+              if (!ctx.textAsShapes) {
+                ctx.graphics.setFont(jfont)
+              }
               elem.layout.lines.foreach { case (line, lineTx) =>
                 ctx.withTransform(lineTx) {
                   if (ctx.doRender) {
