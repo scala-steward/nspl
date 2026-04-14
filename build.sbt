@@ -233,6 +233,7 @@ lazy val docs = project
 lazy val root = (project in file("."))
   .settings(commonSettings: _*)
   .settings(publish / skip := true)
+  .settings(publishArtifact := false)
   .aggregate(
     saddle,
     saddleJS,
