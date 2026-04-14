@@ -455,7 +455,7 @@ class SaddlePlotSpec extends munit.FunSuite {
 
         // show(gallery)
         println(pngToFile(gallery.build, width = 10000))
-        println(pdfToFile(gallery.build))
+        println(pdfToFile(gallery.build, textAsShapes = false))
         println(pdfToFile(text))
         while (false) {
           gallery.build

@@ -13,3 +13,4 @@ website/static/api
 _gen/
 .hugo_build.lock
 .claude/settings.local.json
+.vscode/mcp.json

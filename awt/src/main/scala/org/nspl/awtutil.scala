@@ -120,7 +120,8 @@ trait JavaAWTUtil {
       build: Build[K],
       os: java.io.OutputStream,
       width: Int = 500,
-      format: String = "pdf"
+      format: String = "pdf",
+      textAsShapes : Boolean = true
   )(implicit
       er: Renderer[K, JavaRC]
   ) = {
@@ -135,7 +136,7 @@ trait JavaAWTUtil {
     val aspect = elem.bounds.h / elem.bounds.w
     val height = (width * aspect).toInt
     val g2d = new VectorGraphics2D()
-    val renderingContext = new JavaRC(g2d, doRender = true, textAsShapes = true)
+    val renderingContext = new JavaRC(g2d, doRender = true, textAsShapes = textAsShapes)
 
     val processor =
       format match {
@@ -156,13 +157,14 @@ trait JavaAWTUtil {
       elem: Build[K],
       os: java.io.OutputStream,
       width: Int = 1000,
-      mimeType: String = "image/png"
+      mimeType: String = "image/png",
+      textAsShapes : Boolean = true
   )(implicit
       er: Renderer[K, JavaRC]
   ) = {
     mimeType.split("/").last match {
       case "pdf" | "svg" | "eps" | "svg+xml" =>
-        writeVector(elem, os, width, mimeType.split("/").last)
+        writeVector(elem, os, width, mimeType.split("/").last, textAsShapes)
       case _ => writeBitmap(elem, os, width, mimeType)
     }
   }
@@ -308,13 +310,14 @@ trait JavaAWTUtil {
       f: File,
       elem: Build[K],
       width: Int,
-      mimeType: String
+      mimeType: String,
+      textAsShapes : Boolean
   )(implicit
       er: Renderer[K, JavaRC]
   ): File = {
     val os = new BufferedOutputStream(new FileOutputStream(f))
     try {
-      write(elem, os, width, mimeType)
+      write(elem, os, width, mimeType, textAsShapes)
     } finally {
       os.close
     }
@@ -324,39 +327,43 @@ trait JavaAWTUtil {
   def svgToFile[K <: Renderable[K]](
       f: File,
       elem: Build[K],
-      width: Int
+      width: Int,
+      textAsShapes : Boolean
   )(implicit
       er: Renderer[K, JavaRC]
   ): File = {
-    renderToFile(f, elem, width, "svg")
+    renderToFile(f, elem, width, "svg", textAsShapes : Boolean)
     f
   }
   def pdfToFile[K <: Renderable[K]](
       f: File,
       elem: Build[K],
-      width: Int
+      width: Int,
+      textAsShapes : Boolean
   )(implicit
       er: Renderer[K, JavaRC]
   ): File = {
-    renderToFile(f, elem, width, "application/pdf")
+    renderToFile(f, elem, width, "application/pdf", textAsShapes)
     f
   }
 
   def pdfToFile[K <: Renderable[K]](
       f: File,
-      elem: Build[K]
+      elem: Build[K],
+      textAsShapes : Boolean
   )(implicit
       er: Renderer[K, JavaRC]
-  ): File = pdfToFile(f, elem, 500)
+  ): File = pdfToFile(f, elem, 500, textAsShapes)
 
   def pdfToFile[K <: Renderable[K]](
       elem: Build[K],
-      width: Int = 500
+      width: Int = 500,
+      textAsShapes : Boolean = true
   )(implicit
       er: Renderer[K, JavaRC]
   ) = {
     val f = java.io.File.createTempFile("nspl", ".pdf")
-    renderToFile(f, elem, width, "application/pdf")
+    renderToFile(f, elem, width, "application/pdf", textAsShapes)
     f
   }
 
@@ -367,7 +374,7 @@ trait JavaAWTUtil {
   )(implicit
       er: Renderer[K, JavaRC]
   ): File = {
-    renderToFile(f, elem, width, "image/png")
+    renderToFile(f, elem, width, "image/png", false)
     f
   }
 
