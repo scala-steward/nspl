@@ -497,31 +497,34 @@ object canvasrenderer {
 
     def onmove(e: MouseEvent) = {
       val p = getCanvasCoordinate(canvas, e, devicePixelRatio)
-      // hover: only when no button is pressed
-      if (e.buttons == 0 && onHover.isDefined) {
+      // Hover + crosshair share the same rAF slot: a second
+      // queueAnimationFrame call before the next frame would otherwise
+      // overwrite the first body, so when both are enabled only the last
+      // queued branch would run. Merge them.
+      if (e.buttons == 0 && (onHover.isDefined || enableCrosshair)) {
         queueAnimationFrame { _ =>
-          ctx.callHoverCallbackOnHit(e, p)
-        }
-      }
-      if (e.buttons == 0 && enableCrosshair) {
-        queueAnimationFrame { _ =>
-          var hit = false
-          ctx.processPlotArea(p) { id =>
-            hit = true
-            val event = MouseHover(p, id)
-            paintableElem = build(Some(paintableElem) -> event)
-            paint()
-            eventStore.add(event, id.canFuseEvents)
-            lastHoveredPlotArea = Some(id)
+          if (onHover.isDefined) {
+            ctx.callHoverCallbackOnHit(e, p)
           }
-          if (!hit) {
-            lastHoveredPlotArea.foreach { id =>
-              val event = MouseLeave(id)
+          if (enableCrosshair) {
+            var hit = false
+            ctx.processPlotArea(p) { id =>
+              hit = true
+              val event = MouseHover(p, id)
               paintableElem = build(Some(paintableElem) -> event)
               paint()
               eventStore.add(event, id.canFuseEvents)
+              lastHoveredPlotArea = Some(id)
             }
-            lastHoveredPlotArea = None
+            if (!hit) {
+              lastHoveredPlotArea.foreach { id =>
+                val event = MouseLeave(id)
+                paintableElem = build(Some(paintableElem) -> event)
+                paint()
+                eventStore.add(event, id.canFuseEvents)
+              }
+              lastHoveredPlotArea = None
+            }
           }
         }
       }
