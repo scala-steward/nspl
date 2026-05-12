@@ -39,12 +39,16 @@ CI runs: `sbt -J-Xmx3000m +compile saddle/test versionPolicyCheck`
 
 **Configuration**: Immutable `Parameters` case class with builder-style copy methods (e.g., `par.xlog(true).main("title")`).
 
+**Interaction model**: User input flows through `Event` types in `events.scala` (`Scroll`, `Drag`, `Selection`, `MouseHover`, `MouseLeave`). The canvas backend hit-tests, builds the event, and feeds it into the plot's `Build` partial function (`xyplotareaBuild`), which returns a fresh `XYPlotArea` for repainting. Live hover decorations (e.g. the crosshair) live *inside* the plot's scene graph — they're parameters on `xyplotarea` toggled by `MouseHover`/`MouseLeave` rebuilds, not overlays drawn by the backend. `PlotAreaIdentifier` carries the axes and view-space frame `Bounds` so `mouseToWorld(canvasPoint)` can invert canvas pixels back to data coordinates. `EventFusionHelper` collapses high-frequency events (consecutive Drags, Hovers, growing Selections) in the replay log.
+
 ## Key Source Locations
 
 - Core abstractions: `core/src/main/scala/org/nspl/core.scala`
 - High-level plot API: `core/src/main/scala/org/nspl/simpleplots.scala`
 - Data renderers: `core/src/main/scala/org/nspl/datarenderers.scala`
 - AWT backend: `awt/src/main/scala/org/nspl/awt.scala`
+- Events and replay-log fusion: `core/src/main/scala/org/nspl/events.scala`
+- Interactivity tests (pure-JVM, exercise the event/Build math the canvas drives): `awt/src/test/scala/interaction.test.scala`
 
 ## Build Details
 
