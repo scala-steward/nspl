@@ -207,6 +207,66 @@ class InteractionSpec extends munit.FunSuite {
     assertEquals(left.elem.m1.m1.m1.m1.m6.members.size, 0)
   }
 
+  /** Build a square xyplot with a configurable crosshair mode. */
+  private def squarePlotWithMode(
+      mode: CrosshairMode
+  ): (XYPlotArea, Build[XYPlotArea]) = {
+    val data = dataSourceFromRows(Seq((0d, 0d), (5d, 5d), (10d, 10d)))
+    val build = xyplotareaBuild(
+      List(data -> List(point(noIdentifier = true))),
+      AxisSettings(LinearAxisFactory),
+      AxisSettings(LinearAxisFactory),
+      xlim = Some(0d -> 10d),
+      ylim = Some(0d -> 10d),
+      xAxisMargin = 0d,
+      yAxisMargin = 0d,
+      crosshairMode = mode
+    )
+    (build.build, build)
+  }
+
+  test("CrosshairMode.Horizontal renders only the horizontal line on hover") {
+    val (initial, build) = squarePlotWithMode(CrosshairMode.Horizontal)
+    val plotAreaId = initial.frameElem.identifier
+      .asInstanceOf[PlotAreaIdentifier]
+      .withBounds(Some(Bounds(0, 0, 100, 100)))
+    val hovered = build((Some(initial), MouseHover(Point(50, 50), plotAreaId)))
+    assertEquals(hovered.elem.m1.m1.m1.m1.m6.members.size, 1)
+  }
+
+  test("CrosshairMode.Vertical renders only the vertical line on hover") {
+    val (initial, build) = squarePlotWithMode(CrosshairMode.Vertical)
+    val plotAreaId = initial.frameElem.identifier
+      .asInstanceOf[PlotAreaIdentifier]
+      .withBounds(Some(Bounds(0, 0, 100, 100)))
+    val hovered = build((Some(initial), MouseHover(Point(50, 50), plotAreaId)))
+    assertEquals(hovered.elem.m1.m1.m1.m1.m6.members.size, 1)
+  }
+
+  test("CrosshairMode.None suppresses the crosshair on hover") {
+    val (initial, build) = squarePlotWithMode(CrosshairMode.None)
+    val plotAreaId = initial.frameElem.identifier
+      .asInstanceOf[PlotAreaIdentifier]
+      .withBounds(Some(Bounds(0, 0, 100, 100)))
+    val hovered = build((Some(initial), MouseHover(Point(50, 50), plotAreaId)))
+    assertEquals(hovered.elem.m1.m1.m1.m1.m6.members.size, 0)
+  }
+
+  test("CrosshairMode survives zoom (Scroll) rebuilds") {
+    val (initial, build) = squarePlotWithMode(CrosshairMode.Horizontal)
+    val plotAreaId = initial.frameElem.identifier
+      .asInstanceOf[PlotAreaIdentifier]
+      .withBounds(Some(Bounds(0, 0, 100, 100)))
+    // Zoom in first, then hover on the resulting plot — the rebuilt plot
+    // must still honor the configured mode.
+    val zoomed = build((Some(initial), Scroll(-1d, Point(50, 50), plotAreaId)))
+    val zoomedId = zoomed.frameElem.identifier
+      .asInstanceOf[PlotAreaIdentifier]
+      .withBounds(Some(Bounds(0, 0, 100, 100)))
+    val hovered = build((Some(zoomed), MouseHover(Point(50, 50), zoomedId)))
+    assertEquals(hovered.elem.m1.m1.m1.m1.m6.members.size, 1)
+  }
+
   test("MouseHover preserves an existing zoom (xlim/ylim)") {
     val (initial, build) = squarePlot()
     val plotAreaId = initial.frameElem.identifier

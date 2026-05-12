@@ -119,7 +119,8 @@ private[nspl] trait Plots {
       leftPadding: RelFontSize = 0d fts,
       rightPadding: RelFontSize = 0.2 fts,
       xNoTickLabel: Boolean = false,
-      yNoTickLabel: Boolean = false
+      yNoTickLabel: Boolean = false,
+      crosshairMode: CrosshairMode = CrosshairMode.Both
   ) = {
     val id = new PlotId
     Build(
@@ -154,7 +155,8 @@ private[nspl] trait Plots {
         leftPadding,
         rightPadding,
         xNoTickLabel,
-        yNoTickLabel
+        yNoTickLabel,
+        crosshairMode = crosshairMode
       )
     ) {
       case (Some(old), Scroll(v1, p, plotAreaId)) if plotAreaId.id == id =>
@@ -205,7 +207,8 @@ private[nspl] trait Plots {
           leftPadding,
           rightPadding,
           xNoTickLabel,
-          yNoTickLabel
+          yNoTickLabel,
+          crosshairMode = crosshairMode
         )
 
       case (Some(old), Drag(dragStart, dragTo, plotAreaId))
@@ -267,7 +270,8 @@ private[nspl] trait Plots {
           leftPadding,
           rightPadding,
           xNoTickLabel,
-          yNoTickLabel
+          yNoTickLabel,
+          crosshairMode = crosshairMode
         )
 
       case (Some(old), Selection(selStart, selEnd, plotAreaId))
@@ -324,7 +328,8 @@ private[nspl] trait Plots {
             leftPadding,
             rightPadding,
             xNoTickLabel,
-            yNoTickLabel
+            yNoTickLabel,
+            crosshairMode = crosshairMode
           )
 
       case (Some(old), MouseHover(loc, plotAreaId)) if plotAreaId.id == id =>
@@ -366,7 +371,8 @@ private[nspl] trait Plots {
           rightPadding,
           xNoTickLabel,
           yNoTickLabel,
-          crosshair = world
+          crosshair = world,
+          crosshairMode = crosshairMode
         )
 
       case (Some(old), MouseLeave(plotAreaId)) if plotAreaId.id == id =>
@@ -403,7 +409,8 @@ private[nspl] trait Plots {
           rightPadding,
           xNoTickLabel,
           yNoTickLabel,
-          crosshair = None
+          crosshair = None,
+          crosshairMode = crosshairMode
         )
     }
   }
@@ -448,7 +455,8 @@ private[nspl] trait Plots {
       rightPadding: RelFontSize = 0.2 fts,
       xNoTickLabel: Boolean = false,
       yNoTickLabel: Boolean = false,
-      crosshair: Option[Point] = None
+      crosshair: Option[Point] = None,
+      crosshairMode: CrosshairMode = CrosshairMode.Both
   ) = {
 
     val xMinMax = data.flatMap { case (data, renderers) =>
@@ -709,18 +717,22 @@ private[nspl] trait Plots {
           val vy = yAxis.worldToView(world.y)
           val crosshairStroke =
             Some(Stroke(lineWidth.value * 0.7, dash = List((0.3 fts).value)))
-          List(
-            ShapeElem(
-              Shape.line(Point(xMinV, vy), Point(xMaxV, vy)),
-              stroke = crosshairStroke,
-              strokeColor = Color.gray2
-            ),
-            ShapeElem(
-              Shape.line(Point(vx, yMaxV), Point(vx, yMinV)),
-              stroke = crosshairStroke,
-              strokeColor = Color.gray2
-            )
+          val horizontalLine = ShapeElem(
+            Shape.line(Point(xMinV, vy), Point(xMaxV, vy)),
+            stroke = crosshairStroke,
+            strokeColor = Color.gray2
           )
+          val verticalLine = ShapeElem(
+            Shape.line(Point(vx, yMaxV), Point(vx, yMinV)),
+            stroke = crosshairStroke,
+            strokeColor = Color.gray2
+          )
+          crosshairMode match {
+            case CrosshairMode.Both       => List(horizontalLine, verticalLine)
+            case CrosshairMode.Horizontal => List(horizontalLine)
+            case CrosshairMode.Vertical   => List(verticalLine)
+            case CrosshairMode.None       => Nil
+          }
         case _ => Nil
       }
     )

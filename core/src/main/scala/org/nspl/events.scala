@@ -73,6 +73,23 @@ private[nspl] trait Events {
   /* The event representing the first build (before any user interaction happened) of component */
   case object BuildEvent extends Event
 
+  /** Which lines of the hover crosshair to draw. */
+  sealed trait CrosshairMode
+  object CrosshairMode {
+
+    /** Both horizontal and vertical lines through the cursor. */
+    case object Both extends CrosshairMode
+
+    /** Only the horizontal line at the cursor y-coordinate. */
+    case object Horizontal extends CrosshairMode
+
+    /** Only the vertical line at the cursor x-coordinate. */
+    case object Vertical extends CrosshairMode
+
+    /** Suppress the crosshair entirely (no lines drawn on hover). */
+    case object None extends CrosshairMode
+  }
+
 }
 
 /** Buffers a sequence of events that, when replayed against a fresh `Build`,

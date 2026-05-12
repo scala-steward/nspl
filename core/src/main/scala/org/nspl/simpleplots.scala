@@ -120,7 +120,8 @@ private[nspl] trait SimplePlots {
         ylabDistance = yLabDistance,
         mainDistance = mainLabDistance,
         xNoTickLabel = xNoTickLabel,
-        yNoTickLabel = yNoTickLabel
+        yNoTickLabel = yNoTickLabel,
+        crosshairMode = crosshairMode
       )
 
     group(

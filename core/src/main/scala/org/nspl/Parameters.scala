@@ -70,7 +70,8 @@ case class Parameters private (
     yTickSpace: Option[Double],
     noLegend: Boolean,
     xNoTickLabel: Boolean,
-    yNoTickLabel: Boolean
+    yNoTickLabel: Boolean,
+    crosshairMode: CrosshairMode
 ) {
 
   /** @param xlog
@@ -524,6 +525,14 @@ case class Parameters private (
   /*@param yNoTickLabel  skip drawing tick labels on y axis */
   def withYNoTickLabel(v: Boolean) = copy(yNoTickLabel = v)
 
+  /** @param crosshairMode
+    *   which lines of the hover crosshair to draw (Both / Horizontal / Vertical)
+    */
+  def crosshairMode(v: CrosshairMode): Parameters = copy(crosshairMode = v)
+
+  /*@param crosshairMode  which lines of the hover crosshair to draw */
+  def withCrosshairMode(v: CrosshairMode) = copy(crosshairMode = v)
+
 }
 
 object Parameters {
@@ -586,6 +595,7 @@ object Parameters {
     ylog = false,
     xlog = false,
     xNoTickLabel = false,
-    yNoTickLabel = false
+    yNoTickLabel = false,
+    crosshairMode = CrosshairMode.Both
   )
 }
