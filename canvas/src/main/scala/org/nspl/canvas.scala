@@ -32,9 +32,9 @@ private[nspl] class RunningAvg {
 class CanvasRC private[nspl] (
     private[nspl] val graphics: CanvasRenderingContext2D,
     private[nspl] val cick: Identifier => Unit,
-    private[nspl] val onHover: Option[(Identifier, MouseEvent) => Unit],
-    private[nspl] val onUnhover: Option[(Identifier, MouseEvent) => Unit],
-    private[nspl] val onShapeClick: Option[(Identifier, MouseEvent) => Unit],
+    private[nspl] val onHover: Option[(Identifier, Point, MouseEvent) => Unit],
+    private[nspl] val onUnhover: Option[(Identifier, Point, MouseEvent) => Unit],
+    private[nspl] val onShapeClick: Option[(Identifier, Point, MouseEvent) => Unit],
     private[nspl] val onSelection: Option[collection.Seq[Identifier] => Unit]
 ) extends RenderingContext[CanvasRC] {
 
@@ -105,6 +105,7 @@ class CanvasRC private[nspl] (
   private[nspl] val hoverShapes = ArrayBuffer[(Shape, Identifier)]()
   private[nspl] val selectionShapes = ArrayBuffer[(Shape, Identifier)]()
   private[nspl] var lastHovered: collection.Seq[Int] = Vector.empty
+  private[nspl] var lastHoveredPlotAreas: collection.Seq[Int] = Vector.empty
 
   private[nspl] def registerPlotArea(shape: Shape, id: PlotAreaIdentifier) =
     plotAreaShapes.append((shape, id))
@@ -127,25 +128,38 @@ class CanvasRC private[nspl] (
     )
   }
 
-  /** Hit-test the registered hover shapes at point `p`, invoke `onHover` for
-    * each hit, and invoke `onUnhover` for shapes that were hit on the
-    * previous call but are not hit this call.
+  /** Hit-test the registered hover shapes (and plot areas) at point `p`,
+    * invoke `onHover` for each hit, and invoke `onUnhover` for shapes that
+    * were hit on the previous call but are not hit this call. For
+    * `PlotAreaIdentifier` hits, the id passed to the callback has its
+    * `bounds` populated (in canvas space), so `mouseToWorld(p)` is usable.
     */
   private[nspl] def callHoverCallbackOnHit(e: MouseEvent, p: Point): Unit =
     onHover.foreach { hover =>
-      val previous = lastHovered
-      val current = hitTest[Identifier](
+      val previousShapes = lastHovered
+      val previousPlots = lastHoveredPlotAreas
+      val currentShapes = hitTest[Identifier](
         p,
         false,
         hoverShapes,
-        (id, _) => hover(id, e)
+        (id, _) => hover(id, p, e)
       )
-      lastHovered = current
-      val gone = previous.filterNot(current.contains)
+      val currentPlots = hitTest[PlotAreaIdentifier](
+        p,
+        true,
+        plotAreaShapes,
+        (id, bounds) => hover(id.withBounds(bounds), p, e)
+      )
+      lastHovered = currentShapes
+      lastHoveredPlotAreas = currentPlots
       onUnhover.foreach { unhover =>
-        gone.foreach { idx =>
+        previousShapes.filterNot(currentShapes.contains).foreach { idx =>
           if (idx >= 0 && idx < hoverShapes.size)
-            unhover(hoverShapes(idx)._2, e)
+            unhover(hoverShapes(idx)._2, p, e)
+        }
+        previousPlots.filterNot(currentPlots.contains).foreach { idx =>
+          if (idx >= 0 && idx < plotAreaShapes.size)
+            unhover(plotAreaShapes(idx)._2, p, e)
         }
       }
     }
@@ -156,7 +170,7 @@ class CanvasRC private[nspl] (
         p,
         false,
         clickShapes,
-        (id, _) => click(id, e)
+        (id, _) => click(id, p, e)
       )
     }
 
@@ -233,7 +247,12 @@ object canvasrenderer {
 
   private[nspl] def cssColor(c: Color) = s"rgba(${c.r},${c.g},${c.b},${c.a}"
 
-  private[nspl] def getCanvasCoordinate(
+  /** Convert a DOM `MouseEvent` to canvas-space coordinates, accounting for
+    * the canvas's bounding rect offset and the device pixel ratio. Exposed
+    * so callers wiring their own listeners (e.g. a separate overlay) can
+    * reuse the same math nspl uses internally.
+    */
+  def getCanvasCoordinate(
       canvas: html.Canvas,
       e: MouseEvent,
       devicePixelRatio: Double
@@ -322,12 +341,18 @@ object canvasrenderer {
     *   Preserved for backward compatibility.
     * @param onHover
     *   fires when the mouse moves over any shape carrying a non-empty
-    *   identifier.
+    *   identifier, or over a plot area. The `Point` is the canvas-space
+    *   cursor location (same coordinate space as `PlotAreaIdentifier.bounds`,
+    *   so it can be fed to `mouseToWorld`). Note that this fires at the
+    *   browser's mousemove rate (coalesced via `requestAnimationFrame`) —
+    *   keep the callback cheap.
     * @param onUnhover
-    *   fires when a previously-hovered shape is no longer under the mouse.
+    *   fires when a previously-hovered shape or plot area is no longer under
+    *   the mouse. The `Point` is the cursor location at the time of the
+    *   un-hover event.
     * @param onShapeClick
     *   fires on click (mouseup without drag) on any shape with a non-empty
-    *   identifier.
+    *   identifier. The `Point` is the canvas-space click location.
     * @param onSelection
     *   fires when the user finishes a shift+drag rectangle, receiving the
     *   identifiers of all shapes whose centers fall in the rectangle.
@@ -342,9 +367,9 @@ object canvasrenderer {
       width: Int,
       height: Int,
       click: Identifier => Unit = (_ => ()),
-      onHover: Option[(Identifier, MouseEvent) => Unit] = None,
-      onUnhover: Option[(Identifier, MouseEvent) => Unit] = None,
-      onShapeClick: Option[(Identifier, MouseEvent) => Unit] = None,
+      onHover: Option[(Identifier, Point, MouseEvent) => Unit] = None,
+      onUnhover: Option[(Identifier, Point, MouseEvent) => Unit] = None,
+      onShapeClick: Option[(Identifier, Point, MouseEvent) => Unit] = None,
       onSelection: Option[collection.Seq[Identifier] => Unit] = None,
       enableScroll: Boolean = true,
       enableDrag: Boolean = true,

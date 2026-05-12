@@ -71,9 +71,9 @@ object nsplcanvastest {
       buildScatter(),
       width = 600,
       height = 400,
-      onShapeClick = Some { (id, _) => emit(s"click  ${fmtId(id)}") },
-      onHover = Some { (id, _) => emit(s"hover  ${fmtId(id)}") },
-      onUnhover = Some { (id, _) => emit(s"unhover ${fmtId(id)}") },
+      onShapeClick = Some { (id, _, _) => emit(s"click  ${fmtId(id)}") },
+      onHover = Some { (id, _, _) => emit(s"hover  ${fmtId(id)}") },
+      onUnhover = Some { (id, _, _) => emit(s"unhover ${fmtId(id)}") },
       onSelection = Some { ids =>
         val sample = ids.take(8).map(fmtId).mkString(", ")
         val tail = if (ids.size > 8) " …" else ""
