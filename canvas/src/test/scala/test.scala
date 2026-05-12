@@ -41,7 +41,7 @@ object nsplcanvastest {
       s"DataRow(externalDS=$ext, ds=$ds, row=$row)"
     case TextBoxIdentifier(label, idx) =>
       s"TextBox(label=$label, index=$idx)"
-    case PlotAreaIdentifier(_, _, _) => "PlotArea"
+    case _: PlotAreaIdentifier        => "PlotArea"
     case EmptyIdentifier              => "Empty"
     case other                        => other.toString
   }
@@ -78,13 +78,15 @@ object nsplcanvastest {
         val sample = ids.take(8).map(fmtId).mkString(", ")
         val tail = if (ids.size > 8) " …" else ""
         emit(s"select ${ids.size} shapes  → $sample$tail")
-      }
+      },
+      enableCrosshair = true
     )
     val (lineCanvas, _) = render(
       buildLine(),
       width = 600,
       height = 200,
-      click = id => emit(s"plotMouseDown ${fmtId(id)}")
+      click = id => emit(s"plotMouseDown ${fmtId(id)}"),
+      enableCrosshair = true
     )
 
     scatterSlot.appendChild(scatterCanvas)

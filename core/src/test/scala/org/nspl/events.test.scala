@@ -86,6 +86,35 @@ class EventFusionHelperSpec extends munit.FunSuite {
     assertEquals(s.size, 2)
   }
 
+  test("consecutive MouseHover events on the same plot area fuse") {
+    val s = new EventFusionHelper
+    val a = plotArea()
+    s.add(MouseHover(Point(10, 10), a), fusable = true)
+    s.add(MouseHover(Point(15, 15), a), fusable = true)
+    s.add(MouseHover(Point(20, 25), a), fusable = true)
+    assertEquals(s.size, 1)
+    assertEquals(s.get.head, MouseHover(Point(20, 25), a))
+  }
+
+  test("MouseHover on different plot areas does not fuse") {
+    val s = new EventFusionHelper
+    val a = plotArea()
+    val b = plotArea()
+    s.add(MouseHover(Point(10, 10), a), fusable = true)
+    s.add(MouseHover(Point(15, 15), b), fusable = true)
+    assertEquals(s.size, 2)
+  }
+
+  test("MouseLeave is not fused with anything") {
+    val s = new EventFusionHelper
+    val a = plotArea()
+    s.add(MouseHover(Point(10, 10), a), fusable = true)
+    s.add(MouseLeave(a), fusable = true)
+    s.add(MouseLeave(a), fusable = true)
+    // hover collapses to itself; both leaves are kept separately
+    assertEquals(s.size, 3)
+  }
+
   test("clear empties the store") {
     val s = new EventFusionHelper
     val a = plotArea()

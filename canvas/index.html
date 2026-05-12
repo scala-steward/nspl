@@ -59,8 +59,11 @@
       <li><b>shift + drag</b> — sweep a selection rectangle. Expect <code>select N shapes → ...</code>.</li>
       <li><b>drag (without shift)</b> — pans the plot inside the axis range.</li>
       <li><b>wheel</b> — zoom toward / away from the cursor.</li>
+      <li><b>crosshair</b> — a dashed crosshair tracks the cursor while it hovers over either plot area.
+        It clears when the mouse leaves the plot, and is suppressed while dragging.
+      </li>
     </ul>
-    The line plot below the scatter only handles drag + wheel + plot-area mousedown.
+    The line plot below the scatter only handles drag + wheel + plot-area mousedown (plus the crosshair).
   </div>
 
   <div class="canvas-slot">

@@ -52,6 +52,24 @@ private[nspl] trait Events {
       plotArea: PlotAreaIdentifier
   ) extends Event
 
+  /** Cursor moved over a plot area while no button was pressed. Plots that
+    * render a crosshair (or any other live hover decoration) react to this.
+    *
+    * @param location
+    *   the cursor in canvas-space coordinates.
+    * @param plotArea
+    *   identifies the plot area under the cursor. The bounds member must be
+    *   defined.
+    */
+  case class MouseHover(location: Point, plotArea: PlotAreaIdentifier)
+      extends Event
+
+  /** Cursor moved off a previously-hovered plot area (either onto a
+    * different part of the canvas or off the canvas entirely). Plots use
+    * this to clear any hover decoration.
+    */
+  case class MouseLeave(plotArea: PlotAreaIdentifier) extends Event
+
   /* The event representing the first build (before any user interaction happened) of component */
   case object BuildEvent extends Event
 
@@ -90,6 +108,10 @@ class EventFusionHelper {
             if a1.id == a2.id && s1 == s2 =>
           // selection growing from a fixed corner
           buffer = buffer.dropRight(1) :+ Selection(s1, c2, a1)
+        case (Some(MouseHover(_, a1)), MouseHover(loc2, a2))
+            if a1.id == a2.id =>
+          // hover events fire on every mousemove; keep only the latest
+          buffer = buffer.dropRight(1) :+ MouseHover(loc2, a1)
         case _ =>
           buffer = buffer :+ ev
       }

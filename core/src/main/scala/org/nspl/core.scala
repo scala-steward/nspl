@@ -153,15 +153,67 @@ case object EmptyIdentifier extends Identifier
 
 /** Final rendered bounds (if available) and identifier of a plot area.
   *
+  * @param bounds
+  *   the canvas-space rectangle of the plot area when delivered to user code
+  *   (set by the rendering backend at hit-test time).
   * @param canFuseEvents
   *   if true, the canvas event store may collapse consecutive Drag/Selection
   *   events on this plot area into a single event when replaying.
+  * @param xAxis
+  *   the x axis of this plot area, when available — used by [[mouseToWorld]].
+  * @param yAxis
+  *   the y axis of this plot area, when available — used by [[mouseToWorld]].
+  * @param viewBounds
+  *   the frame rectangle in view (axis) coordinates — fixed at plot build
+  *   time. Combined with `bounds` it lets us map a canvas-space mouse point
+  *   back to view space, then through the axes to world coordinates.
   */
-case class PlotAreaIdentifier(
-    id: PlotId,
-    bounds: Option[Bounds],
-    canFuseEvents: Boolean = true
-) extends Identifier
+class PlotAreaIdentifier(
+    val id: PlotId,
+    val bounds: Option[Bounds],
+    val canFuseEvents: Boolean = true,
+    val xAxis: Option[Axis] = None,
+    val yAxis: Option[Axis] = None,
+    val viewBounds: Option[Bounds] = None
+) extends Identifier {
+
+  def withBounds(b: Option[Bounds]): PlotAreaIdentifier =
+    new PlotAreaIdentifier(id, b, canFuseEvents, xAxis, yAxis, viewBounds)
+
+  /** Map a canvas-space point (e.g. the `location` of a [[Scroll]] or
+    * `current` of a [[Drag]]) into the plot's world (data) coordinates.
+    * Returns `None` if any of `bounds`, `viewBounds`, `xAxis`, or `yAxis`
+    * is missing, or if the canvas-space rectangle is degenerate.
+    */
+  def mouseToWorld(p: Point): Option[Point] =
+    (bounds, viewBounds, xAxis, yAxis) match {
+      case (Some(cb), Some(vb), Some(xa), Some(ya))
+          if cb.w != 0d && cb.h != 0d =>
+        val vx = vb.x + (p.x - cb.x) / cb.w * vb.w
+        val vy = vb.y + (p.y - cb.y) / cb.h * vb.h
+        Some(Point(xa.viewToWorld(vx), ya.viewToWorld(vy)))
+      case _ => None
+    }
+}
+
+object PlotAreaIdentifier {
+  def apply(
+      id: PlotId,
+      bounds: Option[Bounds],
+      canFuseEvents: Boolean = true,
+      xAxis: Option[Axis] = None,
+      yAxis: Option[Axis] = None,
+      viewBounds: Option[Bounds] = None
+  ): PlotAreaIdentifier =
+    new PlotAreaIdentifier(
+      id,
+      bounds,
+      canFuseEvents,
+      xAxis,
+      yAxis,
+      viewBounds
+    )
+}
 
 /** Identifies a single row in a [[data.DataSource]] within a plot.
   *

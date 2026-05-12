@@ -54,7 +54,7 @@ object DataElem {
 
 private[nspl] trait Plots {
   // format: off
-  type XYPlotAreaType = Elems5[Elems2[Elems2[Elems2[Elems5[ElemList[ShapeElem],ElemList[ShapeElem],ElemList[DataElem],Elems2[Elems3[ShapeElem,ElemList[Elems2[ShapeElem,TextBox]],ElemList[ShapeElem]],Elems3[ShapeElem,ElemList[Elems2[ShapeElem,TextBox]],ElemList[ShapeElem]]],ShapeElem],TextBox],TextBox],TextBox],ShapeElem,ShapeElem,ShapeElem,ShapeElem]
+  type XYPlotAreaType = Elems5[Elems2[Elems2[Elems2[Elems6[ElemList[ShapeElem],ElemList[ShapeElem],ElemList[DataElem],Elems2[Elems3[ShapeElem,ElemList[Elems2[ShapeElem,TextBox]],ElemList[ShapeElem]],Elems3[ShapeElem,ElemList[Elems2[ShapeElem,TextBox]],ElemList[ShapeElem]]],ShapeElem,ElemList[ShapeElem]],TextBox],TextBox],TextBox],ShapeElem,ShapeElem,ShapeElem,ShapeElem]
   // format: on
   case class XYPlotArea(
       elem: XYPlotAreaType,
@@ -326,6 +326,85 @@ private[nspl] trait Plots {
             xNoTickLabel,
             yNoTickLabel
           )
+
+      case (Some(old), MouseHover(loc, plotAreaId)) if plotAreaId.id == id =>
+        import old._
+        // Convert the canvas-space cursor to world coords using the
+        // identifier the canvas backend produced for this paint cycle.
+        // If we can't (axes/bounds missing), fall back to clearing the
+        // crosshair rather than rendering it at a stale location.
+        val world = plotAreaId.mouseToWorld(loc)
+        xyplotarea(
+          id,
+          data,
+          xAxisSetting,
+          yAxisSetting,
+          origin,
+          Some(xMin -> xMax),
+          Some(yMin -> yMax),
+          xAxisMargin,
+          yAxisMargin,
+          xgrid,
+          ygrid,
+          frame,
+          xCustomGrid,
+          yCustomGrid,
+          main,
+          mainFontSize,
+          mainDistance,
+          xlab,
+          xlabFontSize,
+          xlabDistance,
+          xlabAlignment,
+          ylab,
+          ylabFontSize,
+          ylabDistance,
+          ylabAlignment,
+          topPadding,
+          bottomPadding,
+          leftPadding,
+          rightPadding,
+          xNoTickLabel,
+          yNoTickLabel,
+          crosshair = world
+        )
+
+      case (Some(old), MouseLeave(plotAreaId)) if plotAreaId.id == id =>
+        import old._
+        xyplotarea(
+          id,
+          data,
+          xAxisSetting,
+          yAxisSetting,
+          origin,
+          Some(xMin -> xMax),
+          Some(yMin -> yMax),
+          xAxisMargin,
+          yAxisMargin,
+          xgrid,
+          ygrid,
+          frame,
+          xCustomGrid,
+          yCustomGrid,
+          main,
+          mainFontSize,
+          mainDistance,
+          xlab,
+          xlabFontSize,
+          xlabDistance,
+          xlabAlignment,
+          ylab,
+          ylabFontSize,
+          ylabDistance,
+          ylabAlignment,
+          topPadding,
+          bottomPadding,
+          leftPadding,
+          rightPadding,
+          xNoTickLabel,
+          yNoTickLabel,
+          crosshair = None
+        )
     }
   }
 
@@ -368,7 +447,8 @@ private[nspl] trait Plots {
       leftPadding: RelFontSize = 0d fts,
       rightPadding: RelFontSize = 0.2 fts,
       xNoTickLabel: Boolean = false,
-      yNoTickLabel: Boolean = false
+      yNoTickLabel: Boolean = false,
+      crosshair: Option[Point] = None
   ) = {
 
     val xMinMax = data.flatMap { case (data, renderers) =>
@@ -595,7 +675,17 @@ private[nspl] trait Plots {
         ),
         stroke = frameStroke,
         fill = Color.transparent
-      ).withIdentifier(PlotAreaIdentifier(id, None))
+      ).withIdentifier(
+        PlotAreaIdentifier(
+          id,
+          None,
+          xAxis = Some(xAxis),
+          yAxis = Some(yAxis),
+          viewBounds = Some(
+            Bounds(xMinV, yMaxV, xMaxV - xMinV, math.abs(yMinV - yMaxV))
+          )
+        )
+      )
 
     val ygridElem = sequence(ygridPoints map { w =>
       val v = yAxis.worldToView(w)
@@ -610,8 +700,41 @@ private[nspl] trait Plots {
       )
     })
 
+    val crosshairElem: ElemList[ShapeElem] = sequence(
+      crosshair match {
+        case Some(world)
+            if world.x >= xMin && world.x <= xMax &&
+              world.y >= yMin && world.y <= yMax =>
+          val vx = xAxis.worldToView(world.x)
+          val vy = yAxis.worldToView(world.y)
+          val crosshairStroke =
+            Some(Stroke(lineWidth.value * 0.7, dash = List((0.3 fts).value)))
+          List(
+            ShapeElem(
+              Shape.line(Point(xMinV, vy), Point(xMaxV, vy)),
+              stroke = crosshairStroke,
+              strokeColor = Color.gray2
+            ),
+            ShapeElem(
+              Shape.line(Point(vx, yMaxV), Point(vx, yMinV)),
+              stroke = crosshairStroke,
+              strokeColor = Color.gray2
+            )
+          )
+        case _ => Nil
+      }
+    )
+
     val renderedPlot =
-      group(xgridElem, ygridElem, dataelem, axes, frameElem, FreeLayout)
+      group(
+        xgridElem,
+        ygridElem,
+        dataelem,
+        axes,
+        frameElem,
+        crosshairElem,
+        FreeLayout
+      )
 
     val mainBox =
       TextBox(main, fontSize = mainFontSize, width = Some(frameElem.bounds.w))

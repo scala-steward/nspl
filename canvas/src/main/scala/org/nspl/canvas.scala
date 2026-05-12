@@ -123,7 +123,7 @@ class CanvasRC private[nspl] (
       p,
       true,
       plotAreaShapes,
-      (id, bounds) => cb(id.copy(bounds = bounds))
+      (id, bounds) => cb(id.withBounds(bounds))
     )
   }
 
@@ -347,7 +347,8 @@ object canvasrenderer {
       onShapeClick: Option[(Identifier, MouseEvent) => Unit] = None,
       onSelection: Option[collection.Seq[Identifier] => Unit] = None,
       enableScroll: Boolean = true,
-      enableDrag: Boolean = true
+      enableDrag: Boolean = true,
+      enableCrosshair: Boolean = false
   )(implicit
       er: Renderer[K, CanvasRC]
   ): (html.Canvas, Build[K] => Unit) = {
@@ -374,6 +375,9 @@ object canvasrenderer {
     var dragStart = Point(0, 0)
     var queuedCallback: Double => Unit = null
     val eventStore = new EventFusionHelper
+    // Last plot area the cursor was over — used to emit MouseLeave when
+    // the cursor moves off it (or off the canvas entirely).
+    var lastHoveredPlotArea: Option[PlotAreaIdentifier] = None
 
     def paintBounds = {
       // Fit-inside: scale the plot so it fits entirely within the canvas
@@ -474,6 +478,28 @@ object canvasrenderer {
           ctx.callHoverCallbackOnHit(e, p)
         }
       }
+      if (e.buttons == 0 && enableCrosshair) {
+        queueAnimationFrame { _ =>
+          var hit = false
+          ctx.processPlotArea(p) { id =>
+            hit = true
+            val event = MouseHover(p, id)
+            paintableElem = build(Some(paintableElem) -> event)
+            paint()
+            eventStore.add(event, id.canFuseEvents)
+            lastHoveredPlotArea = Some(id)
+          }
+          if (!hit) {
+            lastHoveredPlotArea.foreach { id =>
+              val event = MouseLeave(id)
+              paintableElem = build(Some(paintableElem) -> event)
+              paint()
+              eventStore.add(event, id.canFuseEvents)
+            }
+            lastHoveredPlotArea = None
+          }
+        }
+      }
       if (e.button == 0 && ctx.mousedown) {
         e.preventDefault()
         queueAnimationFrame { _ =>
@@ -541,6 +567,22 @@ object canvasrenderer {
       canvas.onclick = onclickHandler _
     }
     canvas.addEventListener("wheel", onwheel _)
+    if (enableCrosshair) {
+      // The cursor leaving the canvas produces no further mousemove, so we
+      // need an explicit "left the plot area" signal for the crosshair to
+      // clear.
+      canvas.addEventListener(
+        "mouseleave",
+        (_: MouseEvent) =>
+          lastHoveredPlotArea.foreach { id =>
+            val event = MouseLeave(id)
+            paintableElem = build(Some(paintableElem) -> event)
+            paint()
+            eventStore.add(event, id.canFuseEvents)
+            lastHoveredPlotArea = None
+          }
+      )
+    }
 
     queueAnimationFrame { _ =>
       paint()
@@ -698,7 +740,7 @@ object canvasrenderer {
                 elem.shape.transform((_, old) =>
                   ctx.getAffineTransform.applyBefore(old)
                 ),
-                pa.copy(bounds = Some(elem.bounds))
+                pa.withBounds(Some(elem.bounds))
               )
             case other =>
               val resolved = elem.shape.transform((_, old) =>
@@ -778,7 +820,7 @@ object canvasrenderer {
                     elem.bounds.w,
                     elem.bounds.h
                   ),
-                  pa.copy(bounds = Some(elem.bounds))
+                  pa.withBounds(Some(elem.bounds))
                 )
               case other =>
                 val rect = Shape.rectangle(
