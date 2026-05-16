@@ -125,6 +125,15 @@ lazy val canvas = project
   .enablePlugins(ScalaJSPlugin)
   .dependsOn(coreJS, sharedJs)
 
+lazy val svgJs = project
+  .in(file("svg-js"))
+  .settings(commonSettings)
+  .settings(
+    name := "nspl-svg-js"
+  )
+  .enablePlugins(ScalaJSPlugin)
+  .dependsOn(coreJS, sharedJs)
+
 lazy val sharedJvm = project
   .in(file("shared-jvm"))
   .settings(commonSettings)
@@ -228,6 +237,7 @@ lazy val root = (project in file("."))
     saddleJS,
     awt,
     canvas,
+    svgJs,
     sharedJs,
     sharedJvm,
     core,
