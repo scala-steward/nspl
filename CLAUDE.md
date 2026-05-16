@@ -25,7 +25,7 @@ CI runs: `sbt -J-Xmx3000m +compile saddle/test versionPolicyCheck`
 - **sharedJvm** / **sharedJs** — Shared utilities bridging core to platform-specific code.
 - **awt** — JVM rendering via Java AWT Graphics2D. Exports PNG, JPG, PDF, SVG, EPS. Uses VectorGraphics2D.
 - **canvas** — Scala.js rendering to HTML5 Canvas with interactive pan/zoom.
-- **scalatagsJs** — Scala.js SVG rendering via ScalaTags.
+- **svgJs** — Scala.js rendering to inline `<svg>` DOM. Same interaction model as canvas (hover, click, drag, shift-select, wheel, crosshair) — see `svg-js/src/main/scala/org/nspl/svg.scala`. No external deps; pure-math hit-testing (exact for Rectangle/Ellipse/Line/SimplePath, bounding-box fallback for curve Paths).
 - **saddle** / **saddleJS** — Integration with the Saddle dataframe library.
 - **docs** / **jsdocs** — Documentation (mdoc + Hugo website).
 
@@ -39,7 +39,7 @@ CI runs: `sbt -J-Xmx3000m +compile saddle/test versionPolicyCheck`
 
 **Configuration**: Immutable `Parameters` case class with builder-style copy methods (e.g., `par.xlog(true).main("title")`).
 
-**Interaction model**: User input flows through `Event` types in `events.scala` (`Scroll`, `Drag`, `Selection`, `MouseHover`, `MouseLeave`). The canvas backend hit-tests, builds the event, and feeds it into the plot's `Build` partial function (`xyplotareaBuild`), which returns a fresh `XYPlotArea` for repainting. Live hover decorations (e.g. the crosshair) live *inside* the plot's scene graph — they're parameters on `xyplotarea` toggled by `MouseHover`/`MouseLeave` rebuilds, not overlays drawn by the backend. `PlotAreaIdentifier` carries the axes and view-space frame `Bounds` so `mouseToWorld(canvasPoint)` can invert canvas pixels back to data coordinates. `EventFusionHelper` collapses high-frequency events (consecutive Drags, Hovers, growing Selections) in the replay log.
+**Interaction model**: User input flows through `Event` types in `events.scala` (`Scroll`, `Drag`, `Selection`, `MouseHover`, `MouseLeave`). The canvas and svgJs backends both hit-test, build the event, and feed it into the plot's `Build` partial function (`xyplotareaBuild`), which returns a fresh `XYPlotArea` for repainting. Live hover decorations (e.g. the crosshair) live *inside* the plot's scene graph — they're parameters on `xyplotarea` toggled by `MouseHover`/`MouseLeave` rebuilds, not overlays drawn by the backend. `PlotAreaIdentifier` carries the axes and view-space frame `Bounds` so `mouseToWorld(canvasPoint)` can invert canvas pixels back to data coordinates. `EventFusionHelper` collapses high-frequency events (consecutive Drags, Hovers, growing Selections) in the replay log. The svgJs backend deliberately mirrors the canvas backend's `render` signature and replay-log behavior so the two are interchangeable; the main divergences are pure-math hit-testing (no `isPointInPath`), no `devicePixelRatio` factor (SVG is resolution-independent via `viewBox`), and a `pointer-events="all"` attribute on the root `<svg>` so empty plot-area interior still fires events.
 
 ## Key Source Locations
 
@@ -47,8 +47,11 @@ CI runs: `sbt -J-Xmx3000m +compile saddle/test versionPolicyCheck`
 - High-level plot API: `core/src/main/scala/org/nspl/simpleplots.scala`
 - Data renderers: `core/src/main/scala/org/nspl/datarenderers.scala`
 - AWT backend: `awt/src/main/scala/org/nspl/awt.scala`
+- Canvas backend: `canvas/src/main/scala/org/nspl/canvas.scala`
+- SVG (Scala.js) backend: `svg-js/src/main/scala/org/nspl/svg.scala`
 - Events and replay-log fusion: `core/src/main/scala/org/nspl/events.scala`
-- Interactivity tests (pure-JVM, exercise the event/Build math the canvas drives): `awt/src/test/scala/interaction.test.scala`
+- Interactivity tests (pure-JVM, exercise the event/Build math both the canvas and svgJs backends drive): `awt/src/test/scala/interaction.test.scala`
+- Manual browser demos (no automated DOM tests for either Scala.js backend): `canvas/src/test/scala/test.scala` + `canvas/index.html`, `svg-js/src/test/scala/test.scala` + `svg-js/index.html`. Build with `sbt canvas/Test/fastLinkJS` or `sbt svgJs/Test/fastLinkJS` and open the matching `index.html`.
 
 ## Build Details
 
