@@ -71,7 +71,8 @@ case class Parameters private (
     noLegend: Boolean,
     xNoTickLabel: Boolean,
     yNoTickLabel: Boolean,
-    crosshairMode: CrosshairMode
+    crosshairMode: CrosshairMode,
+    plotLegendLayout: Option[Layout]
 ) {
 
   /** @param xlog
@@ -533,6 +534,18 @@ case class Parameters private (
   /*@param crosshairMode  which lines of the hover crosshair to draw */
   def withCrosshairMode(v: CrosshairMode) = copy(crosshairMode = v)
 
+  /** @param plotLegendLayout
+    *   Layout used to place the plot area and the legend relative to each
+    *   other. If empty (the default), the legend is stacked horizontally to
+    *   the right of the plot area, aligned by anchor, with `legendDistance`
+    *   as the gap.
+    */
+  def plotLegendLayout(v: Option[Layout]): Parameters =
+    copy(plotLegendLayout = v)
+
+  /*@param plotLegendLayout  Layout placing plot area and legend */
+  def withPlotLegendLayout(v: Option[Layout]) = copy(plotLegendLayout = v)
+
 }
 
 object Parameters {
@@ -596,6 +609,7 @@ object Parameters {
     xlog = false,
     xNoTickLabel = false,
     yNoTickLabel = false,
-    crosshairMode = CrosshairMode.Both
+    crosshairMode = CrosshairMode.Both,
+    plotLegendLayout = None
   )
 }

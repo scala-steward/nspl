@@ -127,7 +127,7 @@ private[nspl] trait SimplePlots {
     group(
       plotArea,
       legend1,
-      HorizontalStack(Align.Anchor, legendDistance)
+      plotLegendLayout.getOrElse(HorizontalStack(Align.Anchor, legendDistance))
     )
   }
   def xyzplot[F: FC](data: (DataSource, List[DataRenderer3D], LegendConfig)*)(
@@ -508,7 +508,7 @@ private[nspl] trait SimplePlots {
         ygrid = ygrid
       ),
       ElemEither(eitherLegend),
-      HorizontalStack(Align.Anchor, 1d fts)
+      plotLegendLayout.getOrElse(HorizontalStack(Align.Anchor, 1d fts))
     )
 
   }
